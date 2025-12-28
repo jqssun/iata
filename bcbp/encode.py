@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, Union
 
 from .models import LENGTHS, BarcodedBoardingPass, BoardingPassMetaData
-from .utils import date_to_day_of_year, number_to_hex
+from .utils import date_to_doy
 
 
 class FieldSize:
@@ -22,7 +22,6 @@ class SectionBuilder:
         length: Optional[int] = None,
         add_year_prefix: bool = False,
     ):
-        """Add a field to the section with proper formatting."""
         value = ""
 
         if field is None:
@@ -32,7 +31,7 @@ class SectionBuilder:
         elif isinstance(field, (int, float)):
             value = str(field)
         elif isinstance(field, datetime):
-            value = date_to_day_of_year(field, add_year_prefix)
+            value = date_to_doy(field, add_year_prefix)
         else:
             value = str(field)
         value_length = len(value)
@@ -51,7 +50,6 @@ class SectionBuilder:
         )
 
     def add_section(self, section: "SectionBuilder"):
-        """Add another section to this section with length prefix."""
         section_string = section.to_string()
         found_last_value = False
         section_length = 0
@@ -63,16 +61,14 @@ class SectionBuilder:
             if found_last_value:
                 section_length += field_size.size
 
-        self.add_field(number_to_hex(section_length), 2)
+        self.add_field(f"{section_length:02X}", 2)
         self.add_field(section_string, section_length)
 
     def to_string(self) -> str:
-        """Convert section to string."""
         return "".join(self.output)
 
 
 def encode(bcbp: BarcodedBoardingPass) -> str:
-    """Encode a BarcodedBoardingPass object to BCBP string format."""
     # set default meta values if not provided
     if bcbp.meta is None:
         bcbp.meta = BoardingPassMetaData()
@@ -202,7 +198,9 @@ def encode(bcbp: BarcodedBoardingPass) -> str:
         section_b.add_field(leg.fast_track, LENGTHS.FAST_TRACK)
         conditional_section.add_section(section_b)
         conditional_section.add_field(leg.for_individual_airline_use)
-        barcode_data.add_section(conditional_section) if not mandatory_only else barcode_data.add_field("00")
+        barcode_data.add_section(
+            conditional_section
+        ) if not mandatory_only else barcode_data.add_field("00")
 
     # security data section
     if bcbp.data.security_data is not None:

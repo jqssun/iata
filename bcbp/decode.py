@@ -8,7 +8,7 @@ from .models import (
     BoardingPassMetaData,
     Leg,
 )
-from .utils import date_to_day_of_year, day_of_year_to_date, hex_to_number
+from .utils import date_to_doy, doy_to_date
 
 
 class SectionDecoder:
@@ -17,7 +17,6 @@ class SectionDecoder:
         self.current_index = 0
 
     def _get_next_field(self, length: Optional[int] = None) -> Optional[str]:
-        """Extract the next field from the barcode string."""
         if self.barcode_string is None:
             return None
 
@@ -39,11 +38,9 @@ class SectionDecoder:
         return trimmed_value
 
     def get_next_string(self, length: int) -> Optional[str]:
-        """Get next string field."""
         return self._get_next_field(length)
 
     def get_next_number(self, length: int) -> Optional[int]:
-        """Get next number field."""
         value = self._get_next_field(length)
         if value is None:
             return None
@@ -55,32 +52,27 @@ class SectionDecoder:
     def get_next_date(
         self, length: int, has_year_prefix: bool, reference_year: Optional[int] = None
     ) -> Optional[datetime]:
-        """Get next date field."""
         value = self._get_next_field(length)
         if value is None:
             return None
-        return day_of_year_to_date(value, has_year_prefix, reference_year)
+        return doy_to_date(value, has_year_prefix, reference_year)
 
     def get_next_boolean(self) -> Optional[bool]:
-        """Get next boolean field."""
         value = self._get_next_field(1)
         if value is None:
             return None
         return value == "Y"
 
     def get_next_section_size(self) -> int:
-        """Get the size of the next section."""
-        return hex_to_number(self._get_next_field(2) or "00")
+        return int(self._get_next_field(2) or "00", 16)
 
     def get_remaining_string(self) -> Optional[str]:
-        """Get remaining string."""
         return self._get_next_field()
 
 
 def decode(
     barcode_string: str, reference_year: Optional[int] = None
 ) -> BarcodedBoardingPass:
-    """Decode a BCBP barcode string to BarcodedBoardingPass object."""
     bcbp = BarcodedBoardingPass()
     main_section = SectionDecoder(barcode_string)
 
@@ -99,8 +91,6 @@ def decode(
 
     bcbp.data.legs = []
     added_unique_fields = False
-
-    # decode legs
     for leg_index in range(bcbp.meta.number_of_legs_encoded):
         leg = Leg()
 
@@ -233,13 +223,9 @@ def decode(
         issuance_year = bcbp.data.date_of_issue_of_boarding_pass.year
         for leg in bcbp.data.legs:
             if leg.date_of_flight is not None:
-                day_of_year = date_to_day_of_year(leg.date_of_flight)
-                leg.date_of_flight = day_of_year_to_date(
-                    day_of_year, False, issuance_year
-                )
+                doy = date_to_doy(leg.date_of_flight)
+                leg.date_of_flight = doy_to_date(doy, False, issuance_year)
                 if leg.date_of_flight < bcbp.data.date_of_issue_of_boarding_pass:
-                    leg.date_of_flight = day_of_year_to_date(
-                        day_of_year, False, issuance_year + 1
-                    )
+                    leg.date_of_flight = doy_to_date(doy, False, issuance_year + 1)
 
     return bcbp

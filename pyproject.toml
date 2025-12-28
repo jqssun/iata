@@ -1,0 +1,16 @@
+[project]
+version = "0.0.0rc1"
+name = "iata"
+authors = [
+    {name = "jqssun", email = "jqssun+git@googlemail.com"},
+]
+description = ""
+readme = "README.md"
+license-files = [ "LICENSE" ]
+
+[tool.setuptools]
+packages = ["iata"]
+
+[project.urls]
+Homepage = "https://github.com/jqssun/iata"
+Repository = "https://github.com/jqssun/iata.git"
