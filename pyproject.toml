@@ -1,5 +1,5 @@
 [project]
-version = "0.0.0rc1"
+version = "0.0.0rc2"
 name = "iata"
 authors = [
     {name = "jqssun", email = "jqssun+git@googlemail.com"},
@@ -9,7 +9,7 @@ readme = "README.md"
 license-files = [ "LICENSE" ]
 
 [tool.setuptools]
-packages = ["iata"]
+packages = ["iata", "iata.bcbp"]
 
 [project.urls]
 Homepage = "https://github.com/jqssun/iata"

@@ -91,7 +91,7 @@ def decode(
 
     bcbp.data.legs = []
     added_unique_fields = False
-    for leg_index in range(bcbp.meta.number_of_legs_encoded):
+    for _ in range(bcbp.meta.number_of_legs_encoded):
         leg = Leg()
 
         # mandatory leg fields
@@ -208,15 +208,17 @@ def decode(
     bcbp.meta.beginning_of_security_data = main_section.get_next_string(
         LENGTHS.BEGINNING_OF_SECURITY_DATA
     )
-    bcbp.data.type_of_security_data = main_section.get_next_string(
-        LENGTHS.TYPE_OF_SECURITY_DATA
-    )
-
-    security_section_size = main_section.get_next_section_size()
-    security_section = SectionDecoder(
-        main_section.get_next_string(security_section_size)
-    )
-    bcbp.data.security_data = security_section.get_next_string(LENGTHS.SECURITY_DATA)
+    if bcbp.meta.beginning_of_security_data == "^":
+        bcbp.data.type_of_security_data = main_section.get_next_string(
+            LENGTHS.TYPE_OF_SECURITY_DATA
+        )
+        security_section_size = main_section.get_next_section_size()
+        security_section = SectionDecoder(
+            main_section.get_next_string(security_section_size)
+        )
+        bcbp.data.security_data = security_section.get_next_string(
+            LENGTHS.SECURITY_DATA
+        )
 
     # adjust flight dates based on issuance date
     if bcbp.data.date_of_issue_of_boarding_pass is not None:
