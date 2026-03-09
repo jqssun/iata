@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from .models import (
@@ -219,6 +219,10 @@ def decode(
         bcbp.data.security_data = security_section.get_next_string(
             LENGTHS.SECURITY_DATA
         )
+    else:
+        bcbp.data.security_data = (bcbp.meta.beginning_of_security_data or "") + (
+            main_section.get_remaining_string() or ""
+        )
 
     # adjust flight dates based on issuance date
     if bcbp.data.date_of_issue_of_boarding_pass is not None:
@@ -229,5 +233,18 @@ def decode(
                 leg.date_of_flight = doy_to_date(doy, False, issuance_year)
                 if leg.date_of_flight < bcbp.data.date_of_issue_of_boarding_pass:
                     leg.date_of_flight = doy_to_date(doy, False, issuance_year + 1)
+    elif reference_year is None:
+        now = datetime.now(timezone.utc)
+        for leg in bcbp.data.legs:
+            if leg.date_of_flight is not None:
+                doy = date_to_doy(leg.date_of_flight)
+                candidate = doy_to_date(doy, False, now.year)
+                if candidate.date() > (now + timedelta(days=2)).date():
+                    candidate = doy_to_date(doy, False, now.year - 1)
+                elif candidate.date() < (now + timedelta(days=2)).date() - timedelta(
+                    days=365
+                ):
+                    candidate = doy_to_date(doy, False, now.year + 1)
+                leg.date_of_flight = candidate
 
     return bcbp

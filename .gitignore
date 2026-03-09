@@ -7,3 +7,5 @@ build/
 .venv/*
 
 test*
+*.md
+!README.md
